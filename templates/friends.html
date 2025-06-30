@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}My Friends{% endblock %}
+
+{% block content %}
+  <h2>My Friends</h2>
+  <p>Your friend code: <strong>{{ session.friend_code or 'N/A' }}</strong> (Share this with others!)</p>
+
+  <!-- Friend Search -->
+  <div class="mb-3">
+    <h4>Add Friend</h4>
+    <form method="POST" action="{{ url_for('add_friend_by_gamertag') }}" class="form-inline mb-2">
+      <input type="text" name="gamertag" class="form-control mr-2" placeholder="Enter Gamertag" required>
+      <button type="submit" class="btn btn-primary">Send Request by Gamertag</button>
+    </form>
+    <form method="POST" action="{{ url_for('add_friend_by_code') }}" class="form-inline">
+      <input type="text" name="friend_code" class="form-control mr-2" placeholder="Enter Friend Code" required>
+      <button type="submit" class="btn btn-info">Send Request by Code</button>
+    </form>
+  </div>
+
+  <!-- Friend Requests -->
+  <div class="mb-3">
+    <h4>Pending Friend Requests (Received)</h4>
+    {% if pending_requests_received and pending_requests_received|length > 0 %}
+      <ul class="list-group">
+        {% for request in pending_requests_received %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ request.sender_gamertag }} ({{ request.sender_username }}) wants to be your friend.
+            <span>
+              <a href="{{ url_for('accept_friend_request', requester_id=request.sender_id) }}" class="btn btn-success btn-sm">Accept</a>
+              <a href="{{ url_for('reject_friend_request', requester_id=request.sender_id) }}" class="btn btn-danger btn-sm">Reject</a>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No pending friend requests.</p>
+    {% endif %}
+  </div>
+
+  <!-- Sent Friend Requests -->
+  <div class="mb-3">
+    <h4>Sent Friend Requests (Pending)</h4>
+    {% if pending_requests_sent and pending_requests_sent|length > 0 %}
+      <ul class="list-group">
+        {% for request in pending_requests_sent %}
+          <li class="list-group-item">
+            Request sent to {{ request.receiver_gamertag }} ({{ request.receiver_username }}) - <i>Pending</i>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>You haven't sent any pending friend requests.</p>
+    {% endif %}
+  </div>
+
+  <!-- Current Friends -->
+  <div>
+    <h4>Your Friends List</h4>
+    {% if current_friends and current_friends|length > 0 %}
+      <ul class="list-group">
+        {% for friend in current_friends %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ friend.friend_gamertag }} ({{ friend.friend_username }})
+            <a href="{{ url_for('remove_friend', friend_id=friend.friend_id) }}" class="btn btn-warning btn-sm">Remove Friend</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>You haven't added any friends yet.</p>
+    {% endif %}
+  </div>
+
+{% endblock %}
