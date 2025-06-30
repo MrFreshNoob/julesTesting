@@ -1,0 +1,45 @@
+body {
+    font-family: sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    padding-top: 60px; /* For fixed navbar */
+}
+
+.container {
+    max-width: 960px;
+    margin: auto;
+    overflow: auto;
+    padding: 0 20px;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.alert {
+    margin-bottom: 15px;
+}
+
+.game-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #fff;
+    border-radius: 5px;
+}
+
+.game-card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+
+.game-card h3 {
+    margin-top: 0;
+}
+
+.btn-buy, .btn-add-to-cart {
+    margin-right: 5px;
+}

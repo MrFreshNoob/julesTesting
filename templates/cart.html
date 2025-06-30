@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - GameStore{% endblock %}
+
+{% block content %}
+  <h2>Shopping Cart</h2>
+  {% if games_in_cart and games_in_cart|length > 0 %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Game</th>
+          <th>Price</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for game in games_in_cart %}
+          <tr>
+            <td>
+                <img src="{{ url_for('static', filename=game.image_url.replace('static/', '')) if game.image_url else 'https://via.placeholder.com/50x30.png?text=' + game.title|urlencode }}" alt="{{ game.title }}" style="width: 50px; height: auto; margin-right: 10px;">
+                {{ game.title }}
+            </td>
+            <td>${{ "%.2f"|format(game.price) }}</td>
+            <td>
+              <a href="{{ url_for('remove_from_cart', game_id=game.id) }}" class="btn btn-sm btn-danger">Remove</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="text-right">
+      <h4>Total: ${{ "%.2f"|format(total_price) }}</h4>
+      <a href="{{ url_for('checkout') }}" class="btn btn-success btn-lg">Proceed to Checkout</a>
+    </div>
+  {% else %}
+    <p>Your cart is empty. <a href="{{ url_for('index') }}">Continue shopping</a>.</p>
+  {% endif %}
+{% endblock %}

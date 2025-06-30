@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}My Game Library{% endblock %}
+
+{% block content %}
+  <h2>My Game Library</h2>
+  {% if games %}
+    <div class="list-group">
+      {% for game in games %}
+        <div class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ game.title }}</h5>
+                <small>Purchased: {{ game.purchase_date if game.purchase_date else 'N/A' }}</small> <!-- Assuming purchase_date is available -->
+            </div>
+            <p class="mb-1">{{ game.description }}</p>
+            <small>Genre: {{ game.genre }} | Developer: {{ game.developer }}</small>
+            <!-- Potential actions: Play, View Details, etc. -->
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>You don't own any games yet. <a href="{{ url_for('index') }}">Visit the store</a> to browse our collection!</p>
+  {% endif %}
+{% endblock %}

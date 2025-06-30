@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Game Store{% endblock %}
+
+{% block content %}
+  <h2>Welcome to the Game Store, {{ session.username }}!</h2>
+  <p>Browse our collection of exciting games.</p>
+
+  <div class="row">
+    {% if games %}
+      {% for game in games %}
+        <div class="col-md-4">
+          <div class="game-card">
+            <img src="{{ url_for('static', filename=game.image_url.replace('static/', '')) if game.image_url else 'https://via.placeholder.com/300x200.png?text=' + game.title|urlencode }}" alt="{{ game.title }}">
+            <h3>{{ game.title }}</h3>
+            <p>{{ game.description }}</p>
+            <p><strong>Price:</strong> ${{ "%.2f"|format(game.price) }}</p>
+            <p><em>Genre: {{ game.genre }}</em></p>
+            <p><small>Developer: {{ game.developer }} | Released: {{ game.release_date }}</small></p>
+            <!-- Add to Cart / Buy Now buttons will go here -->
+            <a href="{{ url_for('add_to_cart', game_id=game.id) }}" class="btn btn-sm btn-primary btn-add-to-cart">Add to Cart</a>
+            <a href="{{ url_for('buy_now', game_id=game.id) }}" class="btn btn-sm btn-success btn-buy">Buy Now</a>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No games available at the moment. Please check back later!</p>
+    {% endif %}
+  </div>
+{% endblock %}
