@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - GameStore{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Dashboard</h2>
+    <p>Welcome to the admin area, {{ session.username }}!</p>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3" style="background-color: #007bff !important;">
+                <div class="card-header">Users</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ user_count }}</h5>
+                    <p class="card-text">Total registered users.</p>
+                    <a href="{{ url_for('admin_list_users') }}" class="btn btn-light btn-sm">Manage Users</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3" style="background-color: #28a745 !important;">
+                <div class="card-header">Games</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ game_count }}</h5>
+                    <p class="card-text">Total games in store.</p>
+                    <a href="{{ url_for('admin_list_games') }}" class="btn btn-light btn-sm">Manage Games</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-dark bg-warning mb-3" style="background-color: #ffc107 !important;">
+                <div class="card-header">Reports (Placeholder)</div>
+                <div class="card-body">
+                    <h5 class="card-title">N/A</h5>
+                    <p class="card-text">View generated reports.</p>
+                    <button class="btn btn-light btn-sm" disabled>View Reports</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-5">Quick Actions</h3>
+    <ul class="list-group">
+        <li class="list-group-item"><a href="{{ url_for('admin_list_users') }}">View/Manage Users</a></li>
+        <li class="list-group-item"><a href="{{ url_for('admin_list_games') }}">View Games</a></li>
+        <li class="list-group-item"><a href="{{ url_for('admin_add_game') }}">Add New Game</a></li>
+        <!-- Add more links as features are added -->
+    </ul>
+
+</div>
+
+<style>
+    /* Override some dark theme styles for these specific cards for better visibility of Bootstrap bg colors */
+    .card.bg-primary, .card.bg-success {
+        color: #fff !important; /* Ensure text is white */
+    }
+    .card.bg-primary a.btn-light, .card.bg-success a.btn-light {
+        color: #333 !important; /* Dark text on light button */
+    }
+    .card.bg-warning {
+        color: #333 !important; /* Dark text on yellow */
+    }
+    .card.bg-warning a.btn-light, .card.bg-warning button.btn-light {
+        color: #333 !important;
+    }
+</style>
+{% endblock %}

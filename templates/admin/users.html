@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Users</h2>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline-light mb-3">&laquo; Back to Admin Dashboard</a>
+
+    {% if users %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Gamertag</th>
+                    <th>Friend Code</th>
+                    <th>Is Admin?</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.gamertag }}</td>
+                    <td>{{ user.friend_code }}</td>
+                    <td>
+                        {% if user.is_admin %}
+                            <span class="badge badge-success">Yes</span>
+                        {% else %}
+                            <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.id != session.user_id %} {# Admin cannot change their own status here #}
+                        <form method="POST" action="{{ url_for('admin_toggle_admin', user_id=user.id) }}" style="display: inline;">
+                            {% if user.is_admin %}
+                            <button type="submit" class="btn btn-sm btn-warning">Revoke Admin</button>
+                            {% else %}
+                            <button type="submit" class="btn btn-sm btn-info">Grant Admin</button>
+                            {% endif %}
+                        </form>
+                        {% else %}
+                         <span class="text-muted"> (Self) </span>
+                        {% endif %}
+                        <!-- Add other actions like 'Edit User' or 'Delete User' here later -->
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No users found.</p>
+    {% endif %}
+</div>
+<style>
+    /* Custom badge colors for dark theme if needed, but Bootstrap defaults might be okay with current CSS */
+    .badge-success {
+        background-color: #28a745; /* Ensure this is visible */
+        color: white;
+    }
+    .badge-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    .badge-warning { /* For revoke button */
+         background-color: #ffc107; color: #212529; border-color: #ffc107;
+    }
+     .badge-info { /* For grant button */
+         background-color: #17a2b8; color: white; border-color: #17a2b8;
+    }
+</style>
+{% endblock %}

@@ -11,9 +11,18 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             gamertag TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            friend_code TEXT UNIQUE NOT NULL
+            friend_code TEXT UNIQUE NOT NULL,
+            is_admin BOOLEAN DEFAULT FALSE NOT NULL
         )
     ''')
+
+    # Add is_admin column to existing users if table already exists and column is missing
+    try:
+        cursor.execute("SELECT is_admin FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        # Column does not exist, so add it
+        cursor.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE NOT NULL")
+        print("Added is_admin column to users table.")
 
     # Games table
     cursor.execute('''

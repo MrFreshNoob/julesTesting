@@ -69,10 +69,17 @@ def register():
         password_hash = generate_password_hash(password)
         friend_code = str(uuid.uuid4()) # Generate a unique friend code
 
+        # Check if this is the first user
+        user_count = query_db('SELECT COUNT(id) as count FROM users', one=True)['count']
+        is_first_admin = (user_count == 0)
+
         try:
-            execute_db('INSERT INTO users (username, gamertag, password_hash, friend_code) VALUES (?, ?, ?, ?)',
-                       [username, gamertag, password_hash, friend_code])
-            flash('Registration successful! Please log in.', 'success')
+            execute_db('INSERT INTO users (username, gamertag, password_hash, friend_code, is_admin) VALUES (?, ?, ?, ?, ?)',
+                       [username, gamertag, password_hash, friend_code, is_first_admin])
+            if is_first_admin:
+                flash('Registration successful! You are the first user and have been granted admin privileges. Please log in.', 'success')
+            else:
+                flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
         except sqlite3.IntegrityError as e:
              flash(f'An error occurred: {e}. Please try again.', 'danger')
@@ -93,8 +100,12 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['gamertag'] = user['gamertag']
+            session['is_admin'] = user['is_admin'] # Store admin status in session
             flash('Logged in successfully!', 'success')
-            return redirect(url_for('index')) # To be created (store page)
+            if user['is_admin']:
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('index'))
         else:
             flash('Invalid username or password.', 'danger')
     return render_template('login.html') # We'll create this template later
@@ -284,7 +295,18 @@ def friends():
     ''', [current_user_id])
 
     user_details = query_db('SELECT friend_code FROM users WHERE id = ?', [current_user_id], one=True)
-    session['friend_code'] = user_details['friend_code'] # Ensure session has latest friend_code
+
+    if user_details:
+        session['friend_code'] = user_details['friend_code'] # Ensure session has latest friend_code
+    else:
+        # This case should ideally not happen if user is logged in and session user_id is valid.
+        # It might indicate a desync between session and DB.
+        flash('Error fetching your user details. Please try logging out and back in.', 'danger')
+        # Potentially log the user out:
+        # session.clear()
+        # return redirect(url_for('login'))
+        # For now, just set friend_code to None or an empty string to avoid further errors in template
+        session['friend_code'] = None
 
     cart_item_count = len(session.get('cart', {}))
     return render_template('friends.html',
@@ -446,8 +468,112 @@ def remove_friend(friend_id):
         flash(f'An error occurred: {str(e)}', 'danger')
     return redirect(url_for('friends'))
 
+from functools import wraps
+
 # Need to import 'g' for get_db()
 from flask import g
+
+# Decorator for admin-only routes
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('is_admin'):
+            flash('You do not have permission to access this page.', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    # Basic admin dashboard
+    # Fetch some stats or info to display later if needed
+    user_count = query_db('SELECT COUNT(id) as count FROM users', one=True)['count']
+    game_count = query_db('SELECT COUNT(id) as count FROM games', one=True)['count']
+    return render_template('admin/dashboard.html', user_count=user_count, game_count=game_count)
+
+@app.route('/admin/users')
+@admin_required
+def admin_list_users():
+    users = query_db("SELECT id, username, gamertag, friend_code, is_admin FROM users ORDER BY id")
+    return render_template('admin/users.html', users=users)
+
+@app.route('/admin/toggle_admin/<int:user_id>', methods=['POST'])
+@admin_required
+def admin_toggle_admin(user_id):
+    if user_id == session['user_id']:
+        flash("You cannot change your own admin status.", 'danger')
+        return redirect(url_for('admin_list_users'))
+
+    user = query_db("SELECT * FROM users WHERE id = ?", [user_id], one=True)
+    if not user:
+        flash("User not found.", 'danger')
+        return redirect(url_for('admin_list_users'))
+
+    new_status = not user['is_admin']
+    try:
+        execute_db("UPDATE users SET is_admin = ? WHERE id = ?", [new_status, user_id])
+        flash(f"User {user['username']}'s admin status updated to {new_status}.", 'success')
+    except Exception as e:
+        flash(f"Error updating admin status: {str(e)}", 'danger')
+    return redirect(url_for('admin_list_users'))
+
+@app.route('/admin/games')
+@admin_required
+def admin_list_games():
+    games = query_db("SELECT * FROM games ORDER BY id")
+    return render_template('admin/games.html', games=games)
+
+@app.route('/admin/games/add', methods=['GET', 'POST'])
+@admin_required
+def admin_add_game():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        price = request.form.get('price')
+        genre = request.form.get('genre')
+        release_date = request.form.get('release_date')
+        developer = request.form.get('developer')
+        image_url = request.form.get('image_url') # Should be path like 'static/images/imagename.png'
+
+        if not all([title, description, price, genre, release_date, developer]):
+            flash('All fields except Image URL are required.', 'danger')
+            return render_template('admin/add_game.html', form_data=request.form)
+
+        try:
+            price = float(price)
+            if price < 0:
+                flash('Price cannot be negative.', 'danger')
+                return render_template('admin/add_game.html', form_data=request.form)
+        except ValueError:
+            flash('Invalid price format.', 'danger')
+            return render_template('admin/add_game.html', form_data=request.form)
+
+        try:
+            # Ensure image_url starts with 'static/images/' if provided, or handle default
+            if image_url and not image_url.startswith('static/images/'):
+                if image_url.startswith('/static/images/'): # allow leading slash
+                    image_url = image_url[1:]
+                elif image_url.startswith('images/'): # allow just images/
+                     image_url = 'static/' + image_url
+                else: # prepend static/images/
+                    image_url = f'static/images/{image_url}'
+
+            # If image_url is empty, we might want to set a default placeholder path or leave it NULL
+            # For now, if empty, it will be stored as empty string or NULL based on DB.
+            # The display template (index.html) already has logic for placeholder if image_url is falsy.
+
+            execute_db('INSERT INTO games (title, description, price, genre, release_date, developer, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                       [title, description, price, genre, release_date, developer, image_url])
+            flash(f"Game '{title}' added successfully!", 'success')
+            return redirect(url_for('admin_list_games'))
+        except Exception as e:
+            flash(f"Error adding game: {str(e)}", 'danger')
+            # Pass current form data back to pre-fill the form
+            return render_template('admin/add_game.html', form_data=request.form)
+
+    return render_template('admin/add_game.html', form_data={})
+
 
 if __name__ == '__main__':
     # Make sure to run `flask init-db` once before running the app for the first time

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Games - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Games</h2>
+    <div class="mb-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline-light">&laquo; Back to Admin Dashboard</a>
+        <a href="{{ url_for('admin_add_game') }}" class="btn btn-sm btn-success float-right">Add New Game</a>
+    </div>
+
+    {% if games %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Price</th>
+                    <th>Genre</th>
+                    <th>Developer</th>
+                    <th>Release Date</th>
+                    <th>Image URL</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for game in games %}
+                <tr>
+                    <td>{{ game.id }}</td>
+                    <td>{{ game.title }}</td>
+                    <td>${{ "%.2f"|format(game.price) }}</td>
+                    <td>{{ game.genre }}</td>
+                    <td>{{ game.developer }}</td>
+                    <td>{{ game.release_date }}</td>
+                    <td>{{ game.image_url if game.image_url else 'N/A' }}</td>
+                    <td>
+                        <a href="#" class="btn btn-sm btn-info disabled">Edit</a> {# Placeholder for future edit functionality #}
+                        <a href="#" class="btn btn-sm btn-danger disabled">Delete</a> {# Placeholder for future delete functionality #}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        No games found in the database. <a href="{{ url_for('admin_add_game') }}" class="alert-link">Add the first game!</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
