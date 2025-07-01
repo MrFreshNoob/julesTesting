@@ -216,6 +216,25 @@ def checkout():
 
     return render_template('checkout.html', games_in_cart=games_in_cart, total_price=total_price, cart_item_count=cart_item_count)
 
+@app.route('/buy_now/<int:game_id>')
+def buy_now(game_id):
+    if 'user_id' not in session:
+        flash('Please log in to purchase items.', 'warning')
+        return redirect(url_for('login'))
+
+    game = query_db('SELECT * FROM games WHERE id = ?', [game_id], one=True)
+    if not game:
+        flash('Game not found.', 'danger')
+        return redirect(url_for('index'))
+
+    # Add to cart logic (simplified from add_to_cart)
+    cart = session.get('cart', {})
+    cart[str(game_id)] = 1 # Add/ensure game is in cart
+    session['cart'] = cart
+
+    # flash(f"'{game['title']}' added to cart, proceeding to checkout.", 'info') # Optional: can be noisy
+    return redirect(url_for('checkout'))
+
 
 # Placeholder for other routes - to be implemented later
 @app.route('/library')
