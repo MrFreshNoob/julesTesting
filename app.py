@@ -574,6 +574,125 @@ def admin_add_game():
 
     return render_template('admin/add_game.html', form_data={})
 
+@app.route('/admin/user/<int:user_id>/edit', methods=['GET'])
+@admin_required
+def admin_edit_user_page(user_id):
+    user_to_edit = query_db("SELECT id, username, gamertag, friend_code, is_admin FROM users WHERE id = ?", [user_id], one=True)
+    if not user_to_edit:
+        flash("User not found.", 'danger')
+        return redirect(url_for('admin_list_users'))
+
+    owned_games = query_db("""
+        SELECT g.id, g.title, p.id as purchase_id, p.purchase_date
+        FROM games g
+        JOIN purchases p ON g.id = p.game_id
+        WHERE p.user_id = ?
+        ORDER BY g.title
+    """, [user_id])
+
+    # For adding games to library, get all games not already owned (or just all games and handle logic on add)
+    all_games_in_store = query_db("SELECT id, title FROM games ORDER BY title")
+
+
+    return render_template('admin/edit_user.html',
+                           user_to_edit=user_to_edit,
+                           owned_games=owned_games,
+                           all_games_in_store=all_games_in_store)
+
+@app.route('/admin/user/<int:user_id>/update_details', methods=['POST'])
+@admin_required
+def admin_update_user_details(user_id):
+    user_to_edit = query_db("SELECT * FROM users WHERE id = ?", [user_id], one=True)
+    if not user_to_edit:
+        flash("User not found.", 'danger')
+        return redirect(url_for('admin_list_users'))
+
+    new_username = request.form.get('username', '').strip()
+    new_gamertag = request.form.get('gamertag', '').strip()
+
+    if not new_username or not new_gamertag:
+        flash("Username and Gamertag cannot be empty.", 'danger')
+        return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    # Check for username uniqueness (if changed)
+    if new_username != user_to_edit['username']:
+        existing_user = query_db("SELECT id FROM users WHERE username = ? AND id != ?", [new_username, user_id], one=True)
+        if existing_user:
+            flash(f"Username '{new_username}' is already taken.", 'danger')
+            return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    # Check for gamertag uniqueness (if changed)
+    if new_gamertag != user_to_edit['gamertag']:
+        existing_gamertag = query_db("SELECT id FROM users WHERE gamertag = ? AND id != ?", [new_gamertag, user_id], one=True)
+        if existing_gamertag:
+            flash(f"Gamertag '{new_gamertag}' is already taken.", 'danger')
+            return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    try:
+        execute_db("UPDATE users SET username = ?, gamertag = ? WHERE id = ?",
+                   [new_username, new_gamertag, user_id])
+        flash(f"User {user_to_edit['username']}'s details updated successfully.", 'success')
+    except Exception as e:
+        flash(f"Error updating user details: {str(e)}", 'danger')
+
+    return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+@app.route('/admin/user/<int:user_id>/remove_game/<int:game_id>', methods=['POST'])
+@admin_required
+def admin_remove_game_from_library(user_id, game_id):
+    # Check if user owns the game by looking for the purchase record
+    # We use user_id and game_id to identify the purchase, as purchases table links them.
+    purchase = query_db("SELECT id FROM purchases WHERE user_id = ? AND game_id = ?", [user_id, game_id], one=True)
+
+    if not purchase:
+        flash("User does not own this game or purchase record not found.", 'danger')
+        return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    try:
+        # Delete the specific purchase record. If multiple existed (not current design), this would remove one.
+        execute_db("DELETE FROM purchases WHERE user_id = ? AND game_id = ?", [user_id, game_id])
+        game_title = query_db("SELECT title FROM games WHERE id = ?", [game_id], one=True)['title']
+        flash(f"Game '{game_title}' removed from user's library.", 'success')
+    except Exception as e:
+        flash(f"Error removing game from library: {str(e)}", 'danger')
+
+    return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+@app.route('/admin/user/<int:user_id>/add_game_to_library', methods=['POST'])
+@admin_required
+def admin_add_game_to_library(user_id):
+    game_id_to_add = request.form.get('game_id_to_add')
+
+    if not game_id_to_add:
+        flash("No game selected to add.", 'warning')
+        return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    try:
+        game_id_to_add = int(game_id_to_add)
+    except ValueError:
+        flash("Invalid game ID.", 'danger')
+        return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    # Check if game exists
+    game_to_add = query_db("SELECT title FROM games WHERE id = ?", [game_id_to_add], one=True)
+    if not game_to_add:
+        flash("Selected game does not exist.", 'danger')
+        return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    # Check if user already owns the game
+    already_owns = query_db("SELECT id FROM purchases WHERE user_id = ? AND game_id = ?", [user_id, game_id_to_add], one=True)
+    if already_owns:
+        flash(f"User already owns '{game_to_add['title']}'.", 'info')
+        return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
+    try:
+        execute_db("INSERT INTO purchases (user_id, game_id) VALUES (?, ?)", [user_id, game_id_to_add])
+        flash(f"Game '{game_to_add['title']}' added to user's library.", 'success')
+    except Exception as e:
+        flash(f"Error adding game to library: {str(e)}", 'danger')
+
+    return redirect(url_for('admin_edit_user_page', user_id=user_id))
+
 
 if __name__ == '__main__':
     # Make sure to run `flask init-db` once before running the app for the first time

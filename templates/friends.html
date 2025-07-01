@@ -19,40 +19,61 @@
     </form>
   </div>
 
-  <!-- Friend Requests -->
-  <div class="mb-3">
-    <h4>Pending Friend Requests (Received)</h4>
-    {% if pending_requests_received and pending_requests_received|length > 0 %}
-      <ul class="list-group">
-        {% for request in pending_requests_received %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ request.sender_gamertag }} ({{ request.sender_username }}) wants to be your friend.
-            <span>
-              <a href="{{ url_for('accept_friend_request', requester_id=request.sender_id) }}" class="btn btn-success btn-sm">Accept</a>
-              <a href="{{ url_for('reject_friend_request', requester_id=request.sender_id) }}" class="btn btn-danger btn-sm">Reject</a>
-            </span>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No pending friend requests.</p>
-    {% endif %}
-  </div>
+  <!-- Friend Requests - Accordion -->
+  <div class="accordion mb-3" id="friendRequestsAccordion">
+    <div class="card">
+      <div class="card-header" id="headingReceivedRequests">
+        <h2 class="mb-0">
+          <button class="btn btn-link btn-block text-left text-light" type="button" data-toggle="collapse" data-target="#collapseReceivedRequests" aria-expanded="true" aria-controls="collapseReceivedRequests">
+            Pending Friend Requests (Received) <span class="badge badge-info">{{ pending_requests_received|length if pending_requests_received else 0 }}</span>
+          </button>
+        </h2>
+      </div>
+      <div id="collapseReceivedRequests" class="collapse show" aria-labelledby="headingReceivedRequests" data-parent="#friendRequestsAccordion">
+        <div class="card-body">
+          {% if pending_requests_received and pending_requests_received|length > 0 %}
+            <ul class="list-group">
+              {% for request in pending_requests_received %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  {{ request.sender_gamertag }} ({{ request.sender_username }}) wants to be your friend.
+                  <span>
+                    <a href="{{ url_for('accept_friend_request', requester_id=request.sender_id) }}" class="btn btn-success btn-sm">Accept</a>
+                    <a href="{{ url_for('reject_friend_request', requester_id=request.sender_id) }}" class="btn btn-danger btn-sm">Reject</a>
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="mb-0">No pending friend requests.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-  <!-- Sent Friend Requests -->
-  <div class="mb-3">
-    <h4>Sent Friend Requests (Pending)</h4>
-    {% if pending_requests_sent and pending_requests_sent|length > 0 %}
-      <ul class="list-group">
-        {% for request in pending_requests_sent %}
-          <li class="list-group-item">
-            Request sent to {{ request.receiver_gamertag }} ({{ request.receiver_username }}) - <i>Pending</i>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>You haven't sent any pending friend requests.</p>
-    {% endif %}
+    <div class="card">
+      <div class="card-header" id="headingSentRequests">
+        <h2 class="mb-0">
+          <button class="btn btn-link btn-block text-left text-light collapsed" type="button" data-toggle="collapse" data-target="#collapseSentRequests" aria-expanded="false" aria-controls="collapseSentRequests">
+            Sent Friend Requests (Pending) <span class="badge badge-secondary">{{ pending_requests_sent|length if pending_requests_sent else 0 }}</span>
+          </button>
+        </h2>
+      </div>
+      <div id="collapseSentRequests" class="collapse" aria-labelledby="headingSentRequests" data-parent="#friendRequestsAccordion">
+        <div class="card-body">
+          {% if pending_requests_sent and pending_requests_sent|length > 0 %}
+            <ul class="list-group">
+              {% for request in pending_requests_sent %}
+                <li class="list-group-item">
+                  Request sent to {{ request.receiver_gamertag }} ({{ request.receiver_username }}) - <i>Pending</i>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="mb-0">You haven't sent any pending friend requests.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Current Friends -->

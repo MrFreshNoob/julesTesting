@@ -46,7 +46,8 @@
                         {% else %}
                          <span class="text-muted"> (Self) </span>
                         {% endif %}
-                        <!-- Add other actions like 'Edit User' or 'Delete User' here later -->
+                        <a href="{{ url_for('admin_edit_user_page', user_id=user.id) }}" class="btn btn-sm btn-outline-light ml-2">Edit Details/Library</a>
+                        <!-- Add other actions like 'Delete User' here later -->
                     </td>
                 </tr>
                 {% endfor %}

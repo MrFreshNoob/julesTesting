@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User: {{ user_to_edit.username }} - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Edit User: <strong>{{ user_to_edit.username }}</strong> ({{ user_to_edit.gamertag }})</h2>
+        <a href="{{ url_for('admin_list_users') }}" class="btn btn-sm btn-outline-light">&laquo; Back to Users List</a>
+    </div>
+
+    {# Section 1: User Details (Read-only for now, form will be added here) #}
+    <div class="card mb-4">
+        <div class="card-header">
+            User Information
+        </div>
+        <div class="card-body">
+            <p><strong>User ID:</strong> {{ user_to_edit.id }}</p>
+            <p><strong>Username:</strong> {{ user_to_edit.username }}</p>
+            <p><strong>Gamertag:</strong> {{ user_to_edit.gamertag }}</p>
+            <p><strong>Friend Code:</strong> {{ user_to_edit.friend_code }}</p>
+            <p><strong>Is Admin:</strong>
+                {% if user_to_edit.is_admin %}
+                    <span class="badge badge-success">Yes</span>
+                {% else %}
+                    <span class="badge badge-secondary">No</span>
+                {% endif %}
+                {% if user_to_edit.id != session.user_id %}
+                <form method="POST" action="{{ url_for('admin_toggle_admin', user_id=user_to_edit.id) }}" style="display: inline; margin-left: 10px;">
+                    <button type="submit" class="btn btn-xs {% if user_to_edit.is_admin %}btn-warning{% else %}btn-info{% endif %}">
+                        {% if user_to_edit.is_admin %}Revoke Admin{% else %}Grant Admin{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </p>
+            {# Placeholder for edit form - will be added in next step #}
+            <div id="edit-user-details-form" class="mt-4">
+                <h5>Edit User Details</h5>
+                <form method="POST" action="{{ url_for('admin_update_user_details', user_id=user_to_edit.id) }}">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user_to_edit.username }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gamertag">Gamertag</label>
+                        <input type="text" class="form-control" id="gamertag" name="gamertag" value="{{ user_to_edit.gamertag }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Details</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Section 2: Owned Games #}
+    <div class="card mb-4">
+        <div class="card-header">
+            Owned Games ({{ owned_games|length }})
+        </div>
+        <div class="card-body">
+            {% if owned_games %}
+                <ul class="list-group list-group-flush">
+                    {% for game in owned_games %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ game.title }}
+                                <small class="text-muted d-block">Purchased: {{ game.purchase_date.split(' ')[0] if game.purchase_date else 'N/A' }} (Purchase ID: {{ game.purchase_id }})</small>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_remove_game_from_library', user_id=user_to_edit.id, game_id=game.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('Are you sure you want to remove {{game.title}} from this user\\'s library?');">Remove</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>This user does not own any games.</p>
+            {% endif %}
+            <hr>
+            <div id="add-game-to-library-form" class="mt-3">
+                <h5>Add Game to Library</h5>
+                <form method="POST" action="{{ url_for('admin_add_game_to_library', user_id=user_to_edit.id) }}">
+                    <div class="form-row align-items-end">
+                        <div class="col-md-8">
+                            <label for="game_id_to_add">Select Game:</label>
+                            <select name="game_id_to_add" id="game_id_to_add" class="form-control">
+                                <option value="">-- Select a Game --</option>
+                                {% for store_game in all_games_in_store %}
+                                    {# Optionally, disable or indicate games already owned #}
+                                    {% set is_owned = store_game.id in owned_games|map(attribute='id')|list %}
+                                    <option value="{{ store_game.id }}" {% if is_owned %}disabled title="User already owns this game"{% endif %}>
+                                        {{ store_game.title }} {% if is_owned %}(Owned){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-success btn-block">Add to Library</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+<style>
+.btn-xs { /* For smaller buttons like toggle admin, remove game */
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+</style>
+{% endblock %}
